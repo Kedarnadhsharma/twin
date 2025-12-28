@@ -1,6 +1,6 @@
 # 🤖 AI Digital Twin
 
-An AI-powered Digital Twin chatbot that represents you on your personal/professional website. Built with FastAPI, OpenAI GPT-4o-mini, and deployable to AWS using Terraform.
+An AI-powered Digital Twin chatbot that represents you on your personal/professional website. Built with FastAPI, OpenAI GPT-4o-mini, Next.js, and deployed to AWS using Terraform with GitHub Actions CI/CD.
 
 ## 📋 Table of Contents
 
@@ -11,6 +11,7 @@ An AI-powered Digital Twin chatbot that represents you on your personal/professi
 - [Getting Started](#getting-started)
 - [Local Development](#local-development)
 - [AWS Deployment](#aws-deployment)
+- [CI/CD with GitHub Actions](#cicd-with-github-actions)
 - [Configuration](#configuration)
 - [API Reference](#api-reference)
 
@@ -90,23 +91,25 @@ sequenceDiagram
     Frontend-->>User: Display message
 ```
 
-### Local Development Architecture
+### CI/CD Pipeline
 
 ```mermaid
 flowchart LR
-    subgraph Local["💻 Local Development"]
-        FE[Frontend\nNext.js :3000]
-        BE[Backend\nFastAPI :8000]
-        MEM[("📁 Local Memory\n./memory/")]
+    subgraph GitHub["📦 GitHub"]
+        Push[Push to main]
+        Actions[GitHub Actions]
     end
 
-    subgraph External["🌐 External"]
-        OAI[OpenAI API]
+    subgraph AWS["☁️ AWS"]
+        OIDC[OIDC Auth]
+        TF[Terraform Apply]
+        Deploy[Deploy Resources]
     end
 
-    FE <-->|HTTP| BE
-    BE <-->|Read/Write| MEM
-    BE <-->|API Calls| OAI
+    Push --> Actions
+    Actions --> OIDC
+    OIDC --> TF
+    TF --> Deploy
 ```
 
 ## Features
@@ -116,39 +119,62 @@ flowchart LR
 - 🔄 **Session Management** - Unique session IDs for each conversation
 - ☁️ **Serverless Deployment** - Runs on AWS Lambda for cost-effective scaling
 - 🏗️ **Infrastructure as Code** - Full Terraform configuration for AWS resources
+- 🚀 **CI/CD Pipeline** - Automated deployments via GitHub Actions with OIDC authentication
 - 🔒 **CORS Protected** - Secure cross-origin request handling
+- 🖼️ **Custom Avatar** - Support for personalized avatar in chat interface
 
 ## Project Structure
 
 ```
 twin/
-├── backend/
-│   ├── server.py           # FastAPI application
-│   ├── context.py          # AI prompt engineering
-│   ├── resources.py        # Data loading utilities
-│   ├── lambda_handler.py   # AWS Lambda entry point
-│   ├── deploy.py           # Lambda packaging script
-│   ├── requirements.txt    # Python dependencies
-│   └── data/
-│       ├── summary.txt     # Your professional summary
-│       ├── style.txt       # Communication style notes
-│       ├── facts.json      # Basic facts (name, etc.)
-│       └── Profile.pdf     # LinkedIn profile export
+├── .github/
+│   └── workflows/
+│       ├── deploy.yaml         # CI/CD deployment workflow
+│       └── destroy.yaml        # Infrastructure teardown workflow
 │
-├── memory/                  # Local conversation storage
-│   └── {session_id}.json
+├── backend/
+│   ├── server.py               # FastAPI application
+│   ├── context.py              # AI prompt engineering
+│   ├── resources.py            # Data loading utilities
+│   ├── lambda_handler.py       # AWS Lambda entry point
+│   ├── deploy.py               # Lambda packaging script
+│   ├── requirements.txt        # Python dependencies
+│   └── data/
+│       ├── summary.txt         # Your professional summary
+│       ├── style.txt           # Communication style notes
+│       ├── facts.json          # Basic facts (name, etc.)
+│       └── Profile.pdf         # LinkedIn profile export
+│
+├── frontend/
+│   ├── app/
+│   │   ├── layout.tsx          # Root layout
+│   │   ├── page.tsx            # Homepage
+│   │   └── globals.css         # Global styles
+│   ├── components/
+│   │   └── twin.tsx            # Chat component
+│   ├── public/
+│   │   └── avatar.png          # Your avatar image
+│   ├── package.json            # Node.js dependencies
+│   ├── next.config.mjs         # Next.js configuration
+│   ├── tailwind.config.ts      # Tailwind CSS config
+│   └── tsconfig.json           # TypeScript config
 │
 ├── scripts/
-│   ├── deploy.sh           # Deployment automation
-│   └── destroy.sh          # Infrastructure teardown
+│   ├── deploy.sh               # Deployment automation
+│   └── destroy.sh              # Infrastructure teardown
 │
 ├── terraform/
-│   ├── main.tf             # AWS resources definition
-│   ├── variables.tf        # Input variables
-│   ├── outputs.tf          # Output values
-│   ├── versions.tf         # Provider configuration
-│   └── terraform.tfvars    # Variable values
+│   ├── bootstrap/              # One-time setup (run locally)
+│   │   ├── main.tf             # S3 state, DynamoDB, OIDC, IAM role
+│   │   └── README.md           # Bootstrap instructions
+│   ├── main.tf                 # AWS resources definition
+│   ├── variables.tf            # Input variables
+│   ├── outputs.tf              # Output values
+│   ├── versions.tf             # Provider configuration
+│   ├── backend.tf              # S3 backend configuration
+│   └── terraform.tfvars        # Variable values
 │
+├── .env.example                # Environment variables template
 └── README.md
 ```
 
@@ -158,7 +184,7 @@ twin/
 
 - Python 3.12+
 - [uv](https://github.com/astral-sh/uv) (Python package manager)
-- Node.js 18+ (for frontend)
+- Node.js 20+ (for frontend)
 - AWS CLI configured
 - Terraform 1.0+
 - Podman or Docker (for Lambda packaging)
@@ -206,7 +232,35 @@ The frontend will be available at `http://localhost:3000`
 
 ## AWS Deployment
 
-### Quick Deploy
+### One-Time Bootstrap Setup
+
+Before using CI/CD, run the bootstrap to create prerequisite AWS resources:
+
+```bash
+cd terraform/bootstrap
+
+terraform init
+terraform apply -var="github_repository=YourUsername/twin"
+```
+
+This creates:
+- S3 bucket for Terraform state
+- DynamoDB table for state locking
+- GitHub OIDC provider
+- IAM role for GitHub Actions
+
+### Add GitHub Secrets
+
+After bootstrap, add these secrets to your GitHub repository (`Settings > Secrets > Actions`):
+
+| Secret | Description |
+|--------|-------------|
+| `AWS_ROLE_ARN` | IAM role ARN (from bootstrap output) |
+| `AWS_ACCOUNT_ID` | Your AWS account ID |
+| `DEFAULT_AWS_REGION` | AWS region (e.g., `us-east-1`) |
+| `OPENAI_API_KEY` | Your OpenAI API key |
+
+### Manual Deploy
 
 ```bash
 # Set your OpenAI API key
@@ -242,6 +296,26 @@ export TF_VAR_openai_api_key="sk-your-key-here"
 ./scripts/destroy.sh test
 ```
 
+## CI/CD with GitHub Actions
+
+### Automatic Deployment
+
+Push to `main` branch automatically triggers deployment to the `dev` environment.
+
+### Manual Deployment
+
+1. Go to **Actions** tab in GitHub
+2. Select **Deploy Digital Twin** workflow
+3. Click **Run workflow**
+4. Select environment (`dev`, `test`, or `prod`)
+
+### Manual Destroy
+
+1. Go to **Actions** tab in GitHub
+2. Select **Destroy Environment** workflow
+3. Click **Run workflow**
+4. Select environment and confirm by typing the environment name
+
 ## Configuration
 
 ### Customizing Your Digital Twin
@@ -256,6 +330,7 @@ export TF_VAR_openai_api_key="sk-your-key-here"
    }
    ```
 4. **Add `backend/data/linkedin.pdf`** - Export of your LinkedIn profile
+5. **Add `frontend/public/avatar.png`** - Your avatar image (displayed in chat)
 
 ### Terraform Variables
 
@@ -334,6 +409,17 @@ Retrieve conversation history.
 }
 ```
 
+## 🔧 Troubleshooting
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| `S3 bucket does not exist` | Run bootstrap first: `cd terraform/bootstrap && terraform apply` |
+| `Permission denied (publickey)` | Add your SSH key to GitHub |
+| `OPENAI_API_KEY not set` | Add `OPENAI_API_KEY` to GitHub Secrets |
+| `Frontend not loading` | Check if S3 bucket has files: `aws s3 ls s3://bucket-name/` |
+
 ## 📝 License
 
 This project is for educational purposes as part of an AI deployment course.
@@ -343,4 +429,4 @@ This project is for educational purposes as part of an AI deployment course.
 - Built as part of the Agentic AI Production Deployment course
 - Powered by OpenAI GPT-4o-mini
 - Infrastructure managed with Terraform
-
+- CI/CD via GitHub Actions with OIDC authentication
