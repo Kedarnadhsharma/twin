@@ -66,7 +66,6 @@ jobs:
           DEFAULT_AWS_REGION: ${{ secrets.DEFAULT_AWS_REGION }}
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
           
       - name: Get Deployment URLs
         id: deploy_outputs

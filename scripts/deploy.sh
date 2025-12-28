@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."        # project root
 echo "📦 Building Lambda package..."
 (cd backend && uv run deploy.py)
 
-# 2. Terraform workspace & apply
+# 2. Terraform workspace & apply & backend configuration
 cd terraform
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 AWS_REGION=${DEFAULT_AWS_REGION:-us-east-1}
@@ -42,15 +42,6 @@ elif [ -n "$TF_VAR_openai_api_key" ]; then
   :
 else
   echo "⚠️ Warning: OPENAI_API_KEY not set. Terraform may prompt for it."
-fi
-
-# Add GitHub repository if provided
-if [ -n "$GITHUB_REPOSITORY" ]; then
-  TF_VARS+=(-var="github_repository=$GITHUB_REPOSITORY")
-elif [ -n "$TF_VAR_github_repository" ]; then
-  :
-else
-  echo "⚠️ Warning: GITHUB_REPOSITORY not set. Terraform may prompt for it."
 fi
 
 # Use prod.tfvars for production environment
