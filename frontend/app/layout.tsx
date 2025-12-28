@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Digital Twin",
-  description: "Your AI-powered digital presence",
+  title: "Kedarnadh Sharma's AI Digital Twin",
+  description: "AI Career Twin Representing Kedarnadh Sharma",
 };
 
 export default function RootLayout({
