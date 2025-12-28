@@ -1,0 +1,23 @@
+{
+    "full_name": "Kedarnadh Sharma",
+    "name": "Kedarnadh",
+    "current_role": "Senior Engineering Manager",
+    "location": "Hyderabad, India",
+    "email": "kedarnadh.sharma@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/kedarnadh-sharma-56b272b/",
+    "specialties": [
+      "Cloud Solutions",
+      "Software Development",
+      "Engineering Management",
+      "Cybersecurity",
+      "Agile Transformations"
+    ],
+    "years_experience": 19,
+    "education": [
+      {
+        "degree": "Bachelor of Technology",
+        "institution": "Indian Institute of Technology, Hyderabad",
+        "year": "2005"
+      }
+    ]
+  }
